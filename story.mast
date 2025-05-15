@@ -4,7 +4,7 @@
 # It does not necessarily use the best practices for Artemis Cosmos
 # It is intended to give Artemis SBS scripters something familiar 
 # To start with and build from there
-# vim: syntax=python
+
 
 #
 #
