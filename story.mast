@@ -4,7 +4,7 @@
 # It does not necessarily use the best practices for Artemis Cosmos
 # It is intended to give Artemis SBS scripters something familiar 
 # To start with and build from there
-#
+# vim: syntax=python
 
 #
 #
@@ -38,6 +38,27 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
         # Script creates the player ships
         #
         player = player_spawn(50000, 0, 50000, "Artemis", good_side_value, "tsn_light_cruiser")
+    task_schedule(gm_setup_docking)
+    ->END
+
+=== gm_setup_docking        
+#
+#  Call this if you add players or stations
+#  e.g. task_schedule(gm_setup_docking)
+#
+##
+## This sets up docking with stations
+## Good news you can script how docking
+## bad news you have to remember to set its up
+    for player_id in role("__player__"):
+        player = to_object(player_id)
+        continue if player is None
+## This sets the docking logic between two things to a MAST label
+## In this case "docking_dock_with_friendly_station"
+## which is defined in the docking add on
+## But new ones can be defined
+        docking_set_docking_logic(player_id, role(player.side) & role("station"), docking_dock_with_friendly_station)
+    ->END
 
 
 
@@ -55,26 +76,25 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
 # This is new to cosmos
 #   To see the sensors of other things like stations
 #   they need to be part of the extra_scan_sources
-#   this code set this up
+#   this code set this up. An extra step, but it has 
+#   a lot of benefits as you have control over this
 #
 ## Get a list of player ships
-    player_ships = to_object_list(role("__player__"))
-## Loop through the player ships     
+## the role function is a way to quickly retrieve
+## a set of IDs quickly
+## to_object_list converts the IDs to a list of objects
+    player_ships = to_object_list(role("__player__") | role("gamemaster"))
+## Loop through the list player ships and gamemaster 
     for player_ship in player_ships:
-## Get the stations on it side        
+## Get the stations on the players side
+## notice role is used twice
+## returning two sets, and then it geth the intersection of those sets
         side = player_ship.side
         stations_friendly = to_object_list(role(side)  & role("station"))
 ## Add a link for the extra_scan_source
 ## The system uses this link to update the scan sources        
 ## a script can link and link the sources
         link(player_ship, "extra_scan_source", stations_friendly)
-#
-# 
-#
-#
-    
-
-
 
 
     
@@ -83,8 +103,20 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
     + "Create Enemy" //comms/create/enemy
     + "Delete" //comms/delete
     + "Create Transport" //comms/create/transport
-    + "Teleport selection"//comms
-    + "Enemy Brain" //comms/enemy_brain
+    + "Teleport selection":
+        gm_pos = gamemaster_get_pos(COMMS_ORIGIN_ID, "rmb")        
+        -> END if gm_pos is None
+## Make sure selected object still exists            
+        obj = to_object(COMMS_SELECTED_ID)
+        -> END if obj is None
+## Set the object to the order marker        
+        obj.pos = gm_pos
+
+
+
+# This is coded to show how to disable a button
+# The Enamy brain only shows a bad side  is selected
+    + "Enemy Brain" //comms/enemy_brain if has_role(COMMS_SELECTED_ID, bad_side_value)
 
 
 # <set_gm_button text="Create Enemy/Small Standard [1]" menu_w="150" />
@@ -96,13 +128,17 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
 
 //comms/create/enemy if has_role(COMMS_ORIGIN_ID, "gamemaster")
     + ^1 "Back" //comms/
-    + "Small Standard [1]" //comms/create/enemy
-    + "Medium Standard [2]" //comms/create/delete
-    + "Large Standard [3]" //comms/create/transport
-    + "Small Standard [4]" //comms/create/enemy
-    + "Medium Standard [5]" //comms/create/delete
-    + "Large Standard [6]" //comms/create/transport
     + "Extras" //comms/create_enemy/extras
+    + "Small Standard [1]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "light" }
+    + "Medium Standard [2]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "medium" }
+    + "Large Standard [3]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "heavy" }
+## Note: As of this writing there are errors
+## in ship data json with skaraan having the wrong size
+## The code assumes this will be fixed
+    + "Small Skaraan [4]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "light", "origin": "skaraan" }
+    + "Medium Skaraan [5]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "medium", "origin": "skaraan" }
+    + "Large Skaraan [6]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "heavy", "origin": "skaraan" }
+    
 
 
 # <set_gm_button text="Create Enemy/Extras/Minefield Arc [M]" />
@@ -121,9 +157,9 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
 # <set_gm_button text="Create Transport/Enemy Heading East [U]" />
 //comms/create/transport if has_role(COMMS_ORIGIN_ID, "gamemaster")
     + ^1 "Back" //comms/
-    + "Heading North [T]" //comms
-    + "Heading East [Y]" //comms
-    + "Enemy Heading East [U]" //comms
+    + "Heading North [T]" gm_create_transport {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": good_side_value, "target_offset": Vec3(0,0,100000) }
+    + "Heading East [Y]" gm_create_transport {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": good_side_value, "target_offset": Vec3(100000, 0,0) }
+    + "Enemy Heading East [U]" gm_create_transport {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "target_offset": Vec3(100000, 0,0) }
 
 
     
@@ -131,15 +167,53 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
 # <set_gm_button text="Enemy Brain/Chase Player [C]" />
 //comms/enemy_brain if has_role(COMMS_ORIGIN_ID, "gamemaster")
     + ^1 "Back" //comms/
-    + "Chase Station [B]" //comms
-    + "Chase Player [C]" //comms
+    + "Chase Station [B]":
+        yield fail if to_object(COMMS_SELECTED_ID) is None
+# NOTE: Adding to a brain is in reverse order of 2.x
+# this is because brains are much more flexible
+# They use a behavior tree instead of a stack
+# Also, since Space is bigger you need to set the size
+# you can specify a SIZE_X and a SIZE_Z that are different i.e. a rectangle
+# SIZE_X defaults to None which means anywhere
+# SIZE_Z defaults to SIZE_X if not supplied
+        brain_clear(COMMS_SELECTED_ID)
+# Chase player within 3000        
+        brain_add(COMMS_SELECTED_ID, ai_chase_player, {"SIZE_X": 3000})
+# Otherwise chase a station within 100,000
+        brain_add(COMMS_SELECTED_ID, ai_chase_station, {"SIZE_X": 100_000})
+# Otherwise chase any player   
+        brain_add(COMMS_SELECTED_ID, ai_chase_player)
+    + "Chase Player [C]":
+        yield fail if to_object(COMMS_SELECTED_ID) is None
+        brain_clear(COMMS_SELECTED_ID)
+        brain_add(COMMS_SELECTED_ID, ai_chase_player)
+        
 
 # <set_gm_button text="Delete\Selected ship [0]" />
 # <set_gm_button text="Delete\Non-Ships Near [R]" />
 //comms/delete if has_role(COMMS_ORIGIN_ID, "gamemaster")
     + ^1 "Back" //comms/
-    + "Selected ship [B]" //comms
-    + "Non-ships near [B]" //comms
+## This is to demonstrate now showing delete    
+    + "Selected ship [B]" if COMMS_SELECTED_ID != COMMS_ORIGIN_ID and COMMS_SELECTED_ID != 0:
+## This is a inline block selecting this button runs this instead of a label
+        delete_object(COMMS_SELECTED_ID)
+        
+    + "Non-ships near [B]":
+        gm_pos = gamemaster_get_pos(COMMS_ORIGIN_ID, "lmb")
+# delete_object_box, delete_object_sphere 
+#   can be quite powerful using the right arguments
+## The tick_type help specify a set of objects
+## TERRAIN = 0x01,
+## NPC = 0x10,
+## PLAYER = 0x20,
+## ALL = 0xffff,
+## NPC_AND_PLAYER = 0x30,
+## DEFAULT is 0xFFF0
+        tick_type = 0x0F # all static objects: e.g. nebula, asteroids
+        delete_objects_box(*gm_pos, 5000,5000,5000, tick_type)
+## delete_objects_box could also take roles
+##  Like delete nebula and stations
+##   delete_objects_box(*gm_box, 5000,5000,5000, 0xffff, "nebula, station")
 
 
 === create_enemy_common
@@ -177,3 +251,62 @@ shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place 
         mine_obj.blob.set("damage_done", 5)
         mine_obj.blob.set("blast_radius", 1000)
         mine_obj.engine_object.blink_state = -5
+    ->END
+
+=== gm_create_transport
+# default will create the variable the using the value once
+# if the variable already exists it does not reset it    
+    default shared transport_count = 0
+    gm_pos = gamemaster_get_pos(ORIGIN_ID, "lmb")
+# This time the *gm_pos syntax is used
+# This is called "unpacking"
+# "*gm_pos" is the same as typing  "gm_pos.x, gm_pos.y, gm_pos.z,"
+#
+    t = npc_spawn(*gm_pos, f"TRN {transport_count}", use_side, "transport_ship", "behav_npcship" )
+    t = to_object(t)
+# This makes sure the transport was created    
+# If not end this task
+    ->END if t is None 
+#   set a target position using the offset passed in
+    pos = Vec3(t.pos)
+    pos += target_offset
+    target_pos(t, *pos)
+# This lets the game master see the ship
+# This should be used sparingly
+# But is here for example purposes
+    link(ORIGIN_ID, "extra_scan_source", t)
+    ->END
+
+=== gm_create_enemy
+    # Expecting certain variables
+    -> END if not are_variables_defined("ORIGIN_ID,use_side")
+    default shared size = "light" # default to light if not supplied
+    default origin = None # default to None if not supplied
+
+    gm_pos = gamemaster_get_pos(ORIGIN_ID, "lmb")
+
+## Filter ship data lets the script query the ship data
+
+    ship_keys = ship_data_filter_ship_data_by_side(None, origin, size, True)
+# Work around skaraan data error and make sure there are ships to pick
+    if len(ship_keys)==0:
+        ship_keys = ship_data_skaraan_ship_keys()
+## This includes tsn
+## Lets exclude tsn, you can decide to include tsn
+    ship_keys = [x for x in ship_keys if "tsn" not in x]
+    ->END if len(ship_keys)==0
+# create a ship from a random selection of th ships    
+    ship_key = random.choice(ship_keys)
+    ship = npc_spawn(*gm_pos,f"", use_side,ship_key,"behav_npcship")
+    link(ORIGIN_ID, "extra_scan_source", ship)
+# Set Brain
+    brain_clear(ship)
+## Chase player within 3000        
+    brain_add(ship, ai_chase_player, {"SIZE_X": 3000})
+## Otherwise chase a station within 100,000
+    brain_add(ship, ai_chase_station, {"SIZE_X": 100_000})
+## Otherwise chase any player   
+    brain_add(ship, ai_chase_player)
+
+    
+    ->END
