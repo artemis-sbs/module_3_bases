@@ -1,3 +1,179 @@
-# Use for startup logic
-@map/first_map "Hello Cosmos"
-" This is my first map.
+#
+# This is a port of the Module 3 bases from Artemis SBS 2.x
+# It attempts to translate it as close as possible
+# It does not necessarily use the best practices for Artemis Cosmos
+# It is intended to give Artemis SBS scripters something familiar 
+# To start with and build from there
+#
+
+#
+#
+# This script will spawn the player ships
+# Setting this value it wil NOT spawn 
+# See below example of how to use both the default ships
+# Or completely creating your own
+#
+PLAYER_CREATE_DEFAULT = False
+#
+#
+#
+PLAYER_COUNT = 1
+
+
+#
+#  This script will use two sides good_side and bad_side
+#  It intentionally is not using tsn or raiders to sus out any errors in not using those
+good_side_value = "good_side"
+bad_side_value = "bad_side"
+
+shared GAMEMASTER_INSTRUCTIONS = """This GM mission script is designed to place one player ship and 3 bases in a sector, and lets the GM add enemies or terrain.^^Left-click to select a ship or station (white target box).^Right-click to select a location in space (blue target box).^Many menu commands require you to select an object or location first.^^1- add small enemy at selected point^2- add medium enemy at selected point^3- add large enemy at selected point^4- add small elite at selected point^5- add medium elite enemy at selected point^6- add large elite enemy at selected point^^0- delete selected object^r- remove unnamed objects near selected point^^m- add minefield ^n- add nebulae^a- add asteroids^^z- teleport selected object to selected point^^b- enemy only cares about stations^c- enemy only cares about players^^t- add transport heading north^y- add transport heading east^u- add enemy transport heading east^^This was script written by Doug Reichard based on the original written by Thom Robertson"""
+
+
+##  <create type="player" player_slot="0" x="50000" y="0" z="50000" />
+//shared/signal/create_player_ships
+    if PLAYER_CREATE_DEFAULT:
+        # Use settings ship, but stt its position
+        PLAYER_LIST[0].pos = Vec3(50000,0,50000)
+    else:
+        # Script creates the player ships
+        #
+        player = player_spawn(50000, 0, 50000, "Artemis", good_side_value, "tsn_light_cruiser")
+
+
+
+@map/module_3_bases "Module 3 bases"
+" This is a basic Game Master module with one player ship protecting three friendly bases. This mission requires another player using the Game Master client to create interesting situations for the other players.
+
+### <create type="station" x="15000" y="0" z="50000" name="DS1" hullID="1000" sideValue="2" />
+    npc_spawn(15000,0,50000, "DS 1", good_side_value, "starbase_command", "behav_station" )
+### <create type="station" x="20000" y="0" z="30000" name="DS2" hullID="1000" sideValue="2" />
+    npc_spawn(20000,0,30000, "DS 2", good_side_value, "starbase_command", "behav_station" )
+### <create type="station" x="15000" y="0" z="70000" name="DS3" hullID="1000" sideValue="2" />
+    npc_spawn(15000,0,70000, "DS 3", good_side_value, "starbase_command", "behav_station" )
+#
+#
+# This is new to cosmos
+#   To see the sensors of other things like stations
+#   they need to be part of the extra_scan_sources
+#   this code set this up
+#
+## Get a list of player ships
+    player_ships = to_object_list(role("__player__"))
+## Loop through the player ships     
+    for player_ship in player_ships:
+## Get the stations on it side        
+        side = player_ship.side
+        stations_friendly = to_object_list(role(side)  & role("station"))
+## Add a link for the extra_scan_source
+## The system uses this link to update the scan sources        
+## a script can link and link the sources
+        link(player_ship, "extra_scan_source", stations_friendly)
+#
+# 
+#
+#
+    
+
+
+
+
+    
+# <set_gm_button text="Teleport Selection [Z]" x="30" y="200" h="30" w="200" />
+//comms if has_roles(COMMS_ORIGIN_ID, 'gamemaster')
+    + "Create Enemy" //comms/create/enemy
+    + "Delete" //comms/delete
+    + "Create Transport" //comms/create/transport
+    + "Teleport selection"//comms
+    + "Enemy Brain" //comms/enemy_brain
+
+
+# <set_gm_button text="Create Enemy/Small Standard [1]" menu_w="150" />
+# <set_gm_button text="Create Enemy/Medium Standard [2]" />
+# <set_gm_button text="Create Enemy/Large Standard [3]" />
+# <set_gm_button text="Create Enemy/Small Skaraan [4]" />
+# <set_gm_button text="Create Enemy/Medium Skaraan [5]" />
+# <set_gm_button text="Create Enemy/Large Skaraan [6]" />
+
+//comms/create/enemy if has_role(COMMS_ORIGIN_ID, "gamemaster")
+    + ^1 "Back" //comms/
+    + "Small Standard [1]" //comms/create/enemy
+    + "Medium Standard [2]" //comms/create/delete
+    + "Large Standard [3]" //comms/create/transport
+    + "Small Standard [4]" //comms/create/enemy
+    + "Medium Standard [5]" //comms/create/delete
+    + "Large Standard [6]" //comms/create/transport
+    + "Extras" //comms/create_enemy/extras
+
+
+# <set_gm_button text="Create Enemy/Extras/Minefield Arc [M]" />
+# <set_gm_button text="Create Enemy/Extras/Nebulae [N]" />
+# <set_gm_button text="Create Enemy/Extras/Asteroids [A]" />
+
+//comms/create_enemy/extras if has_role(COMMS_ORIGIN_ID, "gamemaster")
+    + ^1 "Back" //comms/
+    + "Minefile Arc [M]" gm_create_mine_arc {"ORIGIN_ID": COMMS_ORIGIN_ID }
+    + "Nebulae [N]" gm_create_nebula {"ORIGIN_ID": COMMS_ORIGIN_ID }
+    + "Asteroids [A]" gm_create_asteroids {"ORIGIN_ID": COMMS_ORIGIN_ID }
+
+
+# <set_gm_button text="Create Transport/Heading North [T]" />
+# <set_gm_button text="Create Transport/Heading East [Y]" />
+# <set_gm_button text="Create Transport/Enemy Heading East [U]" />
+//comms/create/transport if has_role(COMMS_ORIGIN_ID, "gamemaster")
+    + ^1 "Back" //comms/
+    + "Heading North [T]" //comms
+    + "Heading East [Y]" //comms
+    + "Enemy Heading East [U]" //comms
+
+
+    
+# <set_gm_button text="Enemy Brain/Chase Stations [B]" />
+# <set_gm_button text="Enemy Brain/Chase Player [C]" />
+//comms/enemy_brain if has_role(COMMS_ORIGIN_ID, "gamemaster")
+    + ^1 "Back" //comms/
+    + "Chase Station [B]" //comms
+    + "Chase Player [C]" //comms
+
+# <set_gm_button text="Delete\Selected ship [0]" />
+# <set_gm_button text="Delete\Non-Ships Near [R]" />
+//comms/delete if has_role(COMMS_ORIGIN_ID, "gamemaster")
+    + ^1 "Back" //comms/
+    + "Selected ship [B]" //comms
+    + "Non-ships near [B]" //comms
+
+
+=== create_enemy_common
+    -> END
+
+
+### <create count="50" type="asteroids" use_gm_position="yes" radius="5000" randomRange="3000" />
+=== gm_create_asteroids
+## Get the game master position
+    gm_pos = gamemaster_get_pos(ORIGIN_ID, "lmb")
+## Scatter generator functions are used to generate random point
+## this scatter fills a ring
+    clusters = scatter_sphere(50, gm_pos.x,gm_pos.y,gm_pos.z, 5000, ring=True)
+    terrain_spawn_asteroid_scatter(clusters, 1000)
+    -> END
+
+## <create count="30" type="nebulas" use_gm_position="yes" radius="5000" randomRange="3000" />
+=== gm_create_nebula
+## Get the game master position
+    gm_pos = gamemaster_get_pos(ORIGIN_ID, "lmb")
+## Scatter generator functions are used to generate random point
+## this scatter fills a ring
+    clusters = scatter_sphere(30, gm_pos.x,gm_pos.y,gm_pos.z, 5000, ring=True)
+    terrain_spawn_nebula_scatter(clusters, 1000)
+    -> END
+
+## <create count="50" type="mines" startAngle="230" endAngle="310" use_gm_position="yes" radius="10000" />
+=== gm_create_mine_arc
+## Get the game master position
+    gm_pos = gamemaster_get_pos(ORIGIN_ID, "lmb")
+## Scatter generator functions are used to generate random point
+    points = scatter_arc(50, gm_pos.x,gm_pos.y,gm_pos.z, 10000, start=230, end=310)
+    for pos in points:
+        mine_obj = terrain_spawn( pos.x, pos.y, pos.z,None, None, "danger_1a", "behav_mine")
+        mine_obj.blob.set("damage_done", 5)
+        mine_obj.blob.set("blast_radius", 1000)
+        mine_obj.engine_object.blink_state = -5
