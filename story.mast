@@ -4,7 +4,7 @@
 # It does not necessarily use the best practices for Artemis Cosmos
 # It is intended to give Artemis SBS scripters something familiar 
 # To start with and build from there
-# For context the original XML is sometime placed in comments
+# For context the original XML is sometimes placed in comments
 #
 
 #
@@ -57,7 +57,7 @@ END"""
 #
 #
 # This script will spawn the player ships
-# Setting PLAYER_CREATE_DEFAULT False it wil NOT spawn 
+# Setting PLAYER_CREATE_DEFAULT False it will NOT spawn 
 # any of the default player ships
 # See below example of how to use both the default ships
 # Or completely creating your own
@@ -116,13 +116,16 @@ PLAYER_COUNT = 1
 @map/module_3_bases "Module 3 bases"
 " This is a basic Game Master module with one player ship protecting three friendly bases. This mission requires another player using the Game Master client to create interesting situations for the other players.
 
+###
+### Vec3.from2x_coord is a function that convert Artemis 2.8 coordinates to Cosmos
+###
 ### <create type="station" x="15000" y="0" z="50000" name="DS1" hullID="1000" sideValue="2" />
-    npc_spawn(15000,0,50000, "DS 1", good_side_value, "starbase_command", "behav_station" )
+    npc_spawn(*Vec3.from2x_coord(15000,0,50000), "DS 1", good_side_value, "starbase_command", "behav_station" )
 ### <create type="station" x="20000" y="0" z="30000" name="DS2" hullID="1000" sideValue="2" />
-    npc_spawn(20000,0,30000, "DS 2", good_side_value, "starbase_command", "behav_station" )
+    npc_spawn(*Vec3.from2x_coord(20000,0,30000), "DS 2", good_side_value, "starbase_command", "behav_station" )
 ### <create type="station" x="15000" y="0" z="70000" name="DS3" hullID="1000" sideValue="2" />
-    npc_spawn(15000,0,70000, "DS 3", good_side_value, "starbase_command", "behav_station" )
-#
+    npc_spawn(*Vec3.from2x_coord(15000,0,70000), "DS 3", good_side_value, "starbase_command", "behav_station" )
+
 #
 # This is new to cosmos
 #   To see the sensors of other things like stations
