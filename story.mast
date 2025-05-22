@@ -115,7 +115,10 @@ PLAYER_COUNT = 1
 #
 @map/module_3_bases "Module 3 bases"
 " This is a basic Game Master module with one player ship protecting three friendly bases. This mission requires another player using the Game Master client to create interesting situations for the other players.
-
+metadata: ```
+Properties:
+    Difficulty: 'gui_int_slider("$text:int;low: 1.0;high:11.0;", var= "DIFFICULTY")'
+```
 ###
 ### Vec3.from2x_coord is a function that convert Artemis 2.8 coordinates to Cosmos
 ###
