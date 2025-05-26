@@ -221,6 +221,12 @@ Properties:
     + "Small Skaraan [4]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "light", "origin": "skaraan" }
     + "Medium Skaraan [5]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "medium", "origin": "skaraan" }
     + "Large Skaraan [6]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "heavy", "origin": "skaraan" }
+# Create fleet is not part of the original 2.8 script    
+    + "Create Fleet":
+        gm_pos = gamemaster_get_pos(COMMS_ORIGIN_ID, "lmb")
+        prefab_spawn(prefab_fleet_raider, {"START_X":gm_pos.x, "START_Y":gm_pos.y, "START_Z":gm_pos.z, "ship_roles": bad_side_value, "race": "kralien", "fleet_difficulty": DIFFICULTY})
+
+
     
 
 
