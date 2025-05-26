@@ -5,6 +5,7 @@
     "mastlib": [
         "artemis-sbs.LegendaryMissions.autoplay.v1.1.0.mastlib",
         "artemis-sbs.LegendaryMissions.ai.v1.1.0.mastlib",
+        "artemis-sbs.LegendaryMissions.comms.v1.1.0.mastlib",
         "artemis-sbs.LegendaryMissions.consoles.v1.1.0.mastlib",
         "artemis-sbs.LegendaryMissions.damage.v1.1.0.mastlib",
         "artemis-sbs.LegendaryMissions.docking.v1.1.0.mastlib",

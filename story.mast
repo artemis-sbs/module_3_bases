@@ -54,6 +54,14 @@ This was script written by Doug Reichard based on the original written by Thom R
 
 END"""
 
+
+#
+# This defines a style so GM buttons standout from 
+# Normal comms buttons
+
+default gamemaster_face = random_terran()
+=$gm #0E0,white,gamemaster_face
+
 #
 #
 # This script will spawn the player ships
@@ -67,6 +75,7 @@ PLAYER_CREATE_DEFAULT = False
 # Force it to one player ship
 #
 PLAYER_COUNT = 1
+
 
 #
 # The create_player_signal is sent to let to create any players
@@ -148,19 +157,23 @@ Properties:
 ## returning two sets, and then it geth the intersection of those sets
         side = player_ship.side
         stations_friendly = to_object_list(role(side)  & role("station"))
+            
 ## Add a link for the extra_scan_source
 ## The system uses this link to update the scan sources        
 ## a script can link and link the sources
         link(player_ship, "extra_scan_source", stations_friendly)
 
+//enable/comms if has_roles(COMMS_ORIGIN_ID, 'gamemaster')    
+# This lets the game master see comms message 
+# as if it is on the good side        
+        COMMS_ORIGIN.data_set.set("ally_list", good_side_value)
 
-    
+//comms if has_roles(COMMS_ORIGIN_ID, 'gamemaster')    
 # <set_gm_button text="Teleport Selection [Z]" x="30" y="200" h="30" w="200" />
 //comms if has_roles(COMMS_ORIGIN_ID, 'gamemaster')
-    + "Create Enemy" //comms/create/enemy
-    + "Delete" //comms/delete
-    + "Create Transport" //comms/create/transport
-    + "Teleport selection":
+    + ^1 [$gm] "Create" //comms/create
+    + ^2 [$gm] "Delete" //comms/delete
+    + ^3 [$gm] "Teleport selection":
         gm_pos = gamemaster_get_pos(COMMS_ORIGIN_ID, "rmb")        
         -> END if gm_pos is None
 ## Make sure selected object still exists            
@@ -171,9 +184,25 @@ Properties:
 
 # This button is coded to show how to optionally disable it
 # The Enemy brain only shows a bad side  is selected
-    + "Enemy Brain" //comms/enemy_brain if has_role(COMMS_SELECTED_ID, bad_side_value)
+    + ^4 [$gm] "Enemy Brain" //comms/enemy_brain if has_role(COMMS_SELECTED_ID, bad_side_value)
+    + ^5 [$gm] "Switch ally":
+        cur = COMMS_ORIGIN.data_set.get("ally_list",0)
+        if cur == good_side_value:
+            COMMS_ORIGIN.data_set.set("ally_list", bad_side_value)
+        else:
+            COMMS_ORIGIN.data_set.set("ally_list", good_side_value)
 
 
+
+#
+# This differs from the original to create
+# a cleaner create menu
+#
+//comms/create if has_role(COMMS_ORIGIN_ID, "gamemaster")
+    + ^1 "Back" //comms/
+    + "Create Enemy" //comms/create/enemy
+    + "Create Transport" //comms/create/transport
+    + "Extras" //comms/create/extras
 # <set_gm_button text="Create Enemy/Small Standard [1]" menu_w="150" />
 # <set_gm_button text="Create Enemy/Medium Standard [2]" />
 # <set_gm_button text="Create Enemy/Large Standard [3]" />
@@ -182,7 +211,6 @@ Properties:
 # <set_gm_button text="Create Enemy/Large Skaraan [6]" />
 //comms/create/enemy if has_role(COMMS_ORIGIN_ID, "gamemaster")
     + ^1 "Back" //comms/
-    + "Extras" //comms/create_enemy/extras
     + "Small Standard [1]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "light" }
     + "Medium Standard [2]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "medium" }
     + "Large Standard [3]" gm_create_enemy {"ORIGIN_ID": COMMS_ORIGIN_ID, "use_side": bad_side_value, "size": "heavy" }
@@ -199,7 +227,7 @@ Properties:
 # <set_gm_button text="Create Enemy/Extras/Minefield Arc [M]" />
 # <set_gm_button text="Create Enemy/Extras/Nebulae [N]" />
 # <set_gm_button text="Create Enemy/Extras/Asteroids [A]" />
-//comms/create_enemy/extras if has_role(COMMS_ORIGIN_ID, "gamemaster")
+//comms/create/extras if has_role(COMMS_ORIGIN_ID, "gamemaster")
     + ^1 "Back" //comms/
     + "Minefile Arc [M]" gm_create_mine_arc {"ORIGIN_ID": COMMS_ORIGIN_ID }
     + "Nebulae [N]" gm_create_nebula {"ORIGIN_ID": COMMS_ORIGIN_ID }
@@ -348,7 +376,8 @@ Properties:
     ->END if len(ship_keys)==0
 # create a ship from a random selection of th ships    
     ship_key = random.choice(ship_keys)
-    ship = npc_spawn(*gm_pos,f"", use_side,ship_key,"behav_npcship")
+    name = name_random_hostile(origin)
+    ship = npc_spawn(*gm_pos,name, use_side,ship_key,"behav_npcship")
     link(ORIGIN_ID, "extra_scan_source", ship)
 # Set Brain
     brain_clear(ship)
