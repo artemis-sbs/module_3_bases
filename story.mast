@@ -116,6 +116,15 @@ PLAYER_COUNT = 1
     ->END
 
 #
+# This is a way to add sky boxes
+# the skyboxes you add one is selected randomly
+# It is a label So any code
+# sky-neb2-rvb is a skybox with a blue and a red star
+# 
+@media/skybox/sky-neb2-rvb "Red vs. Blue"
+    # code could go here
+    # Like having different music for a sky box
+#
 # Mission map
 #
 # <mission_data version="2.8" >
