@@ -10,8 +10,8 @@
 #
 #  This script will use two sides good_side and bad_side
 #  It intentionally is not using tsn or raiders to sus out any errors in not using those
-good_side_value = "good_side"
-bad_side_value = "bad_side"
+shared good_side_value = "good_side"
+shared bad_side_value = "bad_side"
 
 #
 # Setting this variable will let this description

@@ -18,6 +18,7 @@
         "artemis-sbs.LegendaryMissions.side_missions.v1.1.0.mastlib",
         "artemis-sbs.LegendaryMissions.upgrades.v1.1.0.mastlib",
         "artemis-sbs.LegendaryMissions.gamemaster.v1.1.0.mastlib"
-    ]
+    ],
+    "resources": {"media": "artemis-sbs.LegendaryMissions.media.v1.1.0.zip"}
 }
 
